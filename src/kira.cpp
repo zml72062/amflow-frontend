@@ -270,6 +270,72 @@ int kira_agent::run_kira() {
 }
 
 
+std::vector<unsigned long> kira_agent::trivial_sectors(const char* workdir, unsigned long top_sector) {
+    pid_t pid = fork();
+
+    if (pid == 0) { // work in child process
+        std::filesystem::create_directory(std::filesystem::path(workdir));
+        if (chdir(workdir) < 0) {
+            std::cerr << "KiraAgent: error occurred when trying to chdir() in a subprocess\n";
+            exit(1);
+        }
+
+        // remove previous results
+        std::filesystem::remove_all(std::filesystem::path(workdir).append("tmp"));
+        std::filesystem::remove_all(std::filesystem::path(workdir).append("firefly_saves"));
+        std::filesystem::remove_all(std::filesystem::path(workdir).append("sectormappings"));
+        std::filesystem::remove_all(std::filesystem::path(workdir).append("results"));
+
+        
+        // write "integralfamilies.yaml"
+        std::filesystem::create_directory(std::filesystem::path(workdir).append("config"));
+        std::ofstream outf(std::filesystem::path(workdir).append("config").append("integralfamilies.yaml"));
+        write_integralfamilies_yaml(outf, top_sector);
+        outf.close();
+
+        // write "kinematics.yaml"
+        std::ofstream outk(std::filesystem::path(workdir).append("config").append("kinematics.yaml"));
+        write_kinematics_yaml(outk);
+        outk.close();
+
+        // write "jobs.yaml"
+        std::ofstream outj(std::filesystem::path(workdir).append("jobs.yaml"));
+        outj << "jobs:\n"
+             << "  - reduce_sectors:\n"
+             << "      reduce:\n"
+             << "        - {topologies: [" << name()     << "], "
+             <<            "sectors: ["    << top_sector << "], "
+             <<            "r: "           << 100        << ", "
+             <<            "s: "           << 100        << "}\n"
+             << "      run_symmetries: true\n";
+        outj.close();
+
+        // run Kira
+        run_kira();
+        exit(0);
+    } else {
+        if (waitpid(pid, 0, 0) < 0) {
+            std::cerr << "KiraAgent: error occurred when waiting for subprocess\n";
+            return {};
+        }
+
+        std::string sectors_path = std::filesystem::path(workdir)
+                                        .append("sectormappings")
+                                        .append(name())
+                                        .append("trivialsector");
+        std::ifstream intrivial(sectors_path);
+        std::vector<unsigned long> result;
+        unsigned long sect;
+        while (intrivial >> sect) {
+            result.push_back(sect);
+            intrivial.get();
+        }
+        intrivial.close();
+        return result;
+    }
+}
+
+
 std::pair<integral_list, GiNaC::matrix>
 kira_agent::reduce(const char* workdir, const integral_list& target, 
                    const integral_list& preferred, unsigned long top_sector, 

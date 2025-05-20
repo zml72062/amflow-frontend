@@ -43,6 +43,18 @@ public:
            const integral_list& preferred, unsigned long top_sector, 
            unsigned rank, unsigned dot, bool masters_only);
 
+
+    /**
+     * Let Kira find trivial sectors of a given integral family which
+     * are subsectors of a given top sector.
+     * 
+     * @param workdir Kira working directory
+     * @param top_sector the top sector
+     * 
+     * @returns a list of trivial sectors
+     */
+    std::vector<unsigned long> trivial_sectors(const char* workdir, unsigned long top_sector);
+
 private:
     std::string           kira;
     std::string           fermat;

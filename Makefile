@@ -8,11 +8,13 @@ LDFLAGS   = -lyaml-cpp -lcln -lginac
 
 
 OBJS      = ${OBJDIR}/amflow.cpp.o    \
+			${OBJDIR}/apart.cpp.o     \
 			${OBJDIR}/family.cpp.o    \
 			${OBJDIR}/integral.cpp.o  \
 			${OBJDIR}/ibp.cpp.o       \
 			${OBJDIR}/kira.cpp.o      \
 			${OBJDIR}/reduction.cpp.o \
+			${OBJDIR}/boundary.cpp.o  \
 			${OBJDIR}/main.cpp.o
 
 
