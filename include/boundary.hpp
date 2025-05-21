@@ -34,6 +34,12 @@ struct boundary_region {
      * of integral `intgr` in the vicinity of "eta" around infinity.
      */
     GiNaC::ex factor(const integral& intgr);
+
+    /**
+     * Compute the overall exponent in the leading asymptotic expansion
+     * of integral `intgr` in the vicinity of "eta" around infinity.
+     */
+    GiNaC::ex exponent(const integral& intgr);
     
     /**
      * Generate boundary integrals corresponding to `intgr` up to expansion
@@ -82,6 +88,8 @@ struct boundary_region {
               std::vector<std::vector<std::map<std::pair<int, int>, GiNaC::ex>>>>
     subintegrals(const std::vector<int>& top_sector, const integral_list& intgrs, const std::vector<int>& border);
 
+    std::string to_string() const;
+    
     integralfamily*  pfamily;
     GiNaC::matrix    transform;
     GiNaC::lst       new_propagators;

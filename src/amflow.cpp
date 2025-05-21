@@ -1,5 +1,7 @@
 #include "amflow.hpp"
 #include "reduction.hpp"
+#include "boundary.hpp"
+#include "singlesetup.hpp"
 #include "utils.hpp"
 #include <sstream>
 #include <filesystem>
@@ -18,34 +20,12 @@ amflow::amflow(const char* config_path) {
 
     family = integralfamily::from_yaml(config, &globals);
 
-    
-    std::cout << family.to_string();
-
-    integral_reducer reducer(config, family);
-    // kira_agent agent(config, family);
-    auto out = reducer.diffeq(integral_list{integral(family, {2,2,1,1,0,0,0,0,0}),
-                                   integral(family, {2,1,1,1,0,0,0,0,0}),
-                                   integral(family, {1,1,1,1,0,0,0,0,0}),
-                                   integral(family, {1,1,1,0,0,0,0,0,0})}, "/root/amflow_cpp_test");
-    // auto out = reducer.reduce(integral_list{integral(family, {1,2,2,2}),
-    //                                integral(family, {2,2,2,2})},
-                    //  {},"/root/amflow_cpp_test");
-    std::cout << out.first << "\n";
-    std::cout << out.second << "\n";
-// out = agent.reduce("/root/amflow_cpp_test", integral_list{integral(family, {1,2,2,2,0,0,0,0,0}),
-//                                    integral(family, {2,2,2,2,0,0,0,-1,0})},
-//                      integral_list{integral(family, {2,2,2,0,0,0,0,0,0}),
-//                                    integral(family, {1,1,1,1,0,0,0,0,0})},
-//                 15, 3, 4, false);
-//     std::cout << out.first << "\n";
-//     std::cout << out.second << "\n";
-    
-
-// BlackBoxReduce[{j[tt,1,2,2,2,1,2,1,0,0], j[tt,2,2,2,2,-1,2,-1,-2,-1]}, 
-//                {j[tt,1,1,1,1,1,1,1,0,0], j[tt,1,0,0,1,0,0,1,0,0], j[tt,1,1,1,0,0,0,0,-1,0]}, "/root/amflow_test"]
-//     Print[BlackBoxReduce[{j[box1,1,2,2,2], j[box1,2,2,2,2]}, 
-//  {j[box1,2,2,2,0], j[box1,1,1,1,1]}, "/root/amflow_test"]] 
-    
+    integral_system sys(family, {{1,1,1,2,1,1,1,0,0},{1,1,1,1,1,1,2,0,-1}},{},config, "/root/amflow_cpp_test2");
+    sys.reduce_targets();
+    sys.build_diffeq();
+    sys.determine_boundaries();
+    sys.determine_border();
+    sys.setup_subfamilies();
 }
 
 

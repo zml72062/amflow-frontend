@@ -255,6 +255,12 @@ int kira_agent::run_kira() {
                   << kira_exec    << " "
                   << parallel_opt << " "
                   << kira_jobs    << std::endl;
+        
+        // suppress Kira output
+        if (freopen("/dev/null", "w", stdout) == nullptr) {
+            std::cerr << "KiraAgent: error occurred when trying to redirect output\n";
+            exit(1);
+        }
 
         if (execve(kira_exec, argv, envp) < 0) {
             std::cerr << "KiraAgent: error occurred when trying to run Kira in a subprocess\n";

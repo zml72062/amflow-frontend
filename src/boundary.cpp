@@ -1,6 +1,7 @@
 #include "boundary.hpp"
 #include "apart.hpp"
 #include "kira.hpp"
+#include "utils.hpp"
 
 
 static std::vector<GiNaC::lst> all_combinations(const GiNaC::lst& haystack, int r) {
@@ -213,7 +214,7 @@ bool boundary_region::is_trivial_region(const std::vector<int>& top_sector,
             new_top_sector |= (1ul << i);
     }
 
-    std::cout << "Boundary region has top sector " << new_top_sector << "\n";
+    std::cerr << "BoundaryRegion: boundary region has top sector " << new_top_sector << "\n";
     
     kira_agent agent(config, presubf);
     auto trivial_sectors = agent.trivial_sectors(workdir, new_top_sector);
@@ -364,6 +365,26 @@ integralfamily boundary_region::preliminary_subfamily(const std::vector<int>& to
     bias_sps_to_new_props  = complete_info.bias;
     
     return newfamily;
+}
+
+
+GiNaC::ex boundary_region::exponent(const integral& intgr) {
+    compute_new_leading_propagators();
+    GiNaC::ex f = 0;
+
+    int total_large = 0;
+    for (auto& largeq: is_large)
+        total_large += largeq;
+    f += (total_large * (*pfamily->psymbols)["d"] / 2);
+
+    int N_ind = intgr.indices.size();
+    for (int i = 0; i < N_ind; i++) {
+        if ((bool)((leading_factors[i] - 1).expand() == 0))
+            continue;
+        f -= intgr.indices[i];
+    }
+
+    return f;
 }
 
 
@@ -576,5 +597,24 @@ boundary_region::subintegrals(const std::vector<int>& top_sector, const integral
     }
 
     return final_result;
+}
+
+
+std::string boundary_region::to_string() const {
+    std::ostringstream out;
+    int nloops = pfamily->loops.nops();
+    GiNaC::matrix loop_mat(nloops, 1);
+    GiNaC::symbol sqrteta("sqrteta");
+    for (int i = 0; i < nloops; i++) {
+        loop_mat(i, 0) = pfamily->loops[i];
+        if (is_large[i])
+            loop_mat(i, 0) *= sqrteta;
+    }
+    auto rhs = transform.mul(loop_mat);
+    GiNaC::lst rules;
+    for (int i = 0; i < nloops; i++)
+        rules.append(pfamily->loops[i] == rhs(i, 0));
+    out << rules;
+    return out.str();
 }
 

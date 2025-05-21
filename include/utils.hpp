@@ -34,4 +34,18 @@ inline std::ostream& operator<<(std::ostream& out, const std::vector<T>& vector)
 }
 
 
+inline GiNaC::lst matrix_to_lst(const GiNaC::matrix& mat) {
+    GiNaC::lst result;
+    int r = mat.rows(), c = mat.cols();
+    for (int i = 0; i < r; i++) {
+        GiNaC::lst arow;
+        for (int j = 0; j < c; j++) {
+            arow.append(mat(i, j));
+        }
+        result.append(arow);
+    }
+    return result;
+}
+
+
 #endif // UTILS_HPP
