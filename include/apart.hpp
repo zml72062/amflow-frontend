@@ -25,6 +25,18 @@ GiNaC::lst generalized_div(const GiNaC::ex& numer, const GiNaC::ex& denom, const
 
 
 /**
+ * Compute polynomial GCD of `p1` and `p2` with respect to variable `var`.
+ */
+GiNaC::ex generalized_gcd(const GiNaC::ex& p1, const GiNaC::ex& p2, const GiNaC::symbol& var);
+
+
+/**
+ * Compute polynomial LCM of `p1` and `p2` with respect to variable `var`.
+ */
+GiNaC::ex generalized_lcm(const GiNaC::ex& p1, const GiNaC::ex& p2, const GiNaC::symbol& var);
+
+
+/**
  * Expand `frac` into partial fractions, with respect to variable `var`.
  * 
  * @param frac a rational function

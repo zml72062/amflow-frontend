@@ -435,9 +435,15 @@ kira_agent::reduce(const char* workdir, const integral_list& target,
 
             GiNaC::matrix coeff(ntarget, nmaster);
             for (int i = 0; i < ntarget; i++) {
+                GiNaC::ex extarget;
+                try {
+                    extarget = helper.ibp_table.at(target[i].to_string());
+                } catch (std::out_of_range& e) {
+                    extarget = 0;
+                }
+
                 for (int j = 0; j < nmaster; j++) {
-                    coeff(i, j) = helper.ibp_table.at(target[i].to_string())
-                        .diff(GiNaC::ex_to<GiNaC::symbol>(
+                    coeff(i, j) = extarget.diff(GiNaC::ex_to<GiNaC::symbol>(
                             helper.master_table.at(master_list[j].to_string())
                         ))
                         .subs(psymbols()->at("d") == d0 - 2 * psymbols()->at("eps"), 

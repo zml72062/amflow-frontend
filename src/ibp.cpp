@@ -1,6 +1,7 @@
 #include "ibp.hpp"
 #include "utils.hpp"
 #include <fstream>
+#include <filesystem>
 
 
 std::string ibphelper::get_master_id(const std::string& input) {
@@ -50,29 +51,34 @@ void ibphelper::load_masters(const char* masters_path) {
 
 
 void ibphelper::load_ibps(const char* ibp_path) {
-    std::ifstream ibp_file(ibp_path);
-    std::string ibp, current_key;
-    std::size_t _asterisk, counter = 0;
-    GiNaC::parser coeff_parser(*psymbols);
+    if (std::filesystem::exists(std::string(ibp_path))) {
+        std::ifstream ibp_file(ibp_path);
+        std::string ibp, current_key;
+        std::size_t _asterisk, counter = 0;
+        GiNaC::parser coeff_parser(*psymbols);
 
-    while (true) {
-        ibp_file >> ibp;
-        if (ibp_file.eof())
-            break;
-        if (ibp.find(family_name()) != std::string::npos) {
-            if ((_asterisk = ibp.find('*')) == std::string::npos) { // an IBP head
-                counter++;
-                current_key = family_name() + "[" + get_master_id(ibp) + "]";
-                ibp_table[current_key] = 0;
-                std::cerr << "Processing the " << counter << "-th IBP relation" << "\r";
-            } else { // an IBP body
-                GiNaC::ex current_integral = master_table.at(
-                    family_name() + "[" + get_master_id(ibp) + "]"
-                );
-                GiNaC::ex coefficient      = coeff_parser(ibp.substr(_asterisk + 1));
-                ibp_table[current_key]    += (current_integral * coefficient);
+        while (true) {
+            ibp_file >> ibp;
+            if (ibp_file.eof())
+                break;
+            if (ibp.find(family_name()) != std::string::npos) {
+                if ((_asterisk = ibp.find('*')) == std::string::npos) { // an IBP head
+                    counter++;
+                    current_key = family_name() + "[" + get_master_id(ibp) + "]";
+                    ibp_table[current_key] = 0;
+                    std::cerr << "Processing the " << counter << "-th IBP relation" << "\r";
+                } else { // an IBP body
+                    GiNaC::ex current_integral = master_table.at(
+                        family_name() + "[" + get_master_id(ibp) + "]"
+                    );
+                    GiNaC::ex coefficient      = coeff_parser(ibp.substr(_asterisk + 1));
+                    ibp_table[current_key]    += (current_integral * coefficient);
+                }
             }
         }
+        ibp_file.close();
+    } else {
+        std::cerr << "Warning: no IBP result file found" << "\r";
     }
 
     // add IBP entries for master integrals themselves
@@ -80,7 +86,6 @@ void ibphelper::load_ibps(const char* ibp_path) {
         ibp_table[master.first] = master.second;
 
     std::cerr << std::endl << "Done!" << std::endl;
-    ibp_file.close();
 }
 
 

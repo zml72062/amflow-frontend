@@ -101,7 +101,7 @@ void integral_system::determine_border() {
                 auto diff = GiNaC::ex_to<GiNaC::numeric>(-presult.first - numeric_exp);
                 if (GiNaC::is_nonneg_integer(diff)) {
                     exist = true;
-                    border_one = presult.second[i];
+                    border_one = presult.second[i] - diff.to_int();
                     break;
                 }
             }

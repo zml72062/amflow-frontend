@@ -3,6 +3,8 @@
 #include "boundary.hpp"
 #include "singlesetup.hpp"
 #include "utils.hpp"
+#include "solve.hpp"
+#include <fstream>
 #include <sstream>
 #include <filesystem>
 
@@ -20,12 +22,26 @@ amflow::amflow(const char* config_path) {
 
     family = integralfamily::from_yaml(config, &globals);
 
-    integral_system sys(family, {{1,1,1,2,1,1,1,0,0},{1,1,1,1,1,1,2,0,-1}},{},config, "/root/amflow_cpp_test2");
+    integral_system sys(family, {{1,1,1,2},{1,1,1,1}},{},config, "/root/amflow_cpp_test2");
     sys.reduce_targets();
     sys.build_diffeq();
     sys.determine_boundaries();
     sys.determine_border();
     sys.setup_subfamilies();
+
+    std::ifstream in(std::filesystem::path("/root/amflow_cpp_test2").append("DIFFEQ"));
+    std::string diffeq_str;
+    for (int i = 0; i < 4; i++)
+        in >> diffeq_str;
+    in.close();
+
+    auto solver = run_solve::from_string(diffeq_str, GiNaC::numeric(1)/100, "NegIm", config);
+    std::vector<boundary_condition> v;
+    boundary_condition a1;
+    a1.exponent = 1-globals["eps"];
+    a1.expansion = {{}, {1}, {}, {}, {}, {}};
+    v.push_back(a1);
+    std::cout << solver.link(v) << std::endl;
 }
 
 

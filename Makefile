@@ -4,7 +4,7 @@ OBJDIR    = build
 CXX       = g++
 CPPFLAGS  = -I./${INCDIR} -I./linear-ode/${INCDIR}
 CXXFLAGS  = -O2 -Wall
-LDFLAGS   = -lyaml-cpp -lcln -lginac
+LDFLAGS   = -lyaml-cpp -lcln -lginac -lflint
 
 
 OBJS      = ${OBJDIR}/amflow.cpp.o    \
@@ -17,15 +17,18 @@ OBJS      = ${OBJDIR}/amflow.cpp.o    \
 			${OBJDIR}/boundary.cpp.o  \
 			${OBJDIR}/border.cpp.o    \
 			${OBJDIR}/singlesetup.cpp.o\
+			${OBJDIR}/solve.cpp.o     \
 			${OBJDIR}/main.cpp.o
 
-DEOBJS	  = linear-ode/${OBJDIR}/base.cpp.o      \
+DEOBJS	  = linear-ode/${OBJDIR}/interface.cpp.o \
+			linear-ode/${OBJDIR}/base.cpp.o      \
 			linear-ode/${OBJDIR}/jordan.cpp.o    \
 			linear-ode/${OBJDIR}/ratsolver.cpp.o \
 			linear-ode/${OBJDIR}/symdiffeq.cpp.o \
 			linear-ode/${OBJDIR}/symsolver.cpp.o
 
-DESRCS	  = linear-ode/${SRCDIR}/base.cpp        \
+DESRCS	  = linear-ode/${SRCDIR}/interface.cpp   \
+			linear-ode/${SRCDIR}/base.cpp        \
 			linear-ode/${SRCDIR}/jordan.cpp      \
 			linear-ode/${SRCDIR}/ratsolver.cpp   \
 			linear-ode/${SRCDIR}/symdiffeq.cpp   \

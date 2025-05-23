@@ -65,6 +65,30 @@ GiNaC::lst generalized_div(const GiNaC::ex& numer, const GiNaC::ex& denom, const
 }
 
 
+GiNaC::ex generalized_gcd(const GiNaC::ex& p1, const GiNaC::ex& p2, const GiNaC::symbol& var) {
+    int d1 = p1.degree(var), d2 = p2.degree(var);
+    GiNaC::ex lo, hi;
+    if (d1 < d2) {
+        lo = p1;
+        hi = p2;
+    } else {
+        lo = p2;
+        hi = p1;
+    }
+
+    if ((bool)(lo.expand() == 0))
+        return hi;
+    if (lo.degree(var) == 0)
+        return lo;
+    return generalized_gcd(lo, generalized_div(hi, lo, var)[1], var);
+}
+
+
+GiNaC::ex generalized_lcm(const GiNaC::ex& p1, const GiNaC::ex& p2, const GiNaC::symbol& var) {
+    return generalized_div((p1 * p2).expand(), generalized_gcd(p1, p2, var), var)[0];
+}
+
+
 std::vector<parfrac> parfrac_expansion(const GiNaC::ex& frac, const GiNaC::symbol& var) {
     auto numer_denom = frac.normal().numer_denom();
     auto numer = numer_denom[0], denom = numer_denom[1];

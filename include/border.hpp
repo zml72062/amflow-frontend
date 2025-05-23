@@ -41,6 +41,7 @@ public:
      */
     std::vector<std::pair<GiNaC::ex, std::vector<int>>> get_boundary_form();
 
+    friend class run_solve;
 private:
     int           try_order;
     GiNaC::ex     eps_value;
