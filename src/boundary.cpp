@@ -4,35 +4,6 @@
 #include "utils.hpp"
 
 
-static std::vector<GiNaC::lst> all_combinations(const GiNaC::lst& haystack, int r) {
-    if (r == 0) {
-        std::vector<GiNaC::lst> result;
-        result.push_back(GiNaC::lst());
-        return result;
-    }
-
-    int n = haystack.nops();
-    if (n < r)
-        return std::vector<GiNaC::lst>();
-    
-    std::vector<GiNaC::lst> result;
-    for (int i = 0; i < n - r + 1; i++) {
-        GiNaC::lst new_haystack;
-        for (int j = i + 1; j < n; j++)
-            new_haystack.append(haystack[j]);
-        auto partial_combinations = all_combinations(new_haystack, r - 1);
-        for (auto& p_comb: partial_combinations) {
-            GiNaC::lst lneedle;
-            lneedle.append(haystack[i]);
-            for (auto& needle: p_comb)
-                lneedle.append(needle);
-            result.push_back(lneedle);
-        }
-    }
-    return result;
-}
-
-
 /**
  * Determine whether a group of new loop momenta `new_loops` are 
  * independent. If so, representing the old loop momenta `original_loops`
@@ -188,6 +159,37 @@ std::vector<boundary_region> boundary_region::all_boundary_regions(integralfamil
         final_regions.push_back(reg);
     }
     return final_regions;
+}
+
+
+bool boundary_region::is_trivial_region(const std::vector<int>& top_sector) {
+    integralfamily presubf = preliminary_subfamily(top_sector);
+    GiNaC::lst props_from_original;
+    int nprop = top_sector.size();
+    for (int i = 0; i < nprop; i++)
+        if (top_sector[i])
+            props_from_original.append(new_leading_propagators[0][i]);
+    
+    unsigned long new_top_sector = 0;
+    std::vector<int> new_top_sector_vec;
+    for (int i = 0; i < nprop; i++) {
+        auto propi = presubf.propagators[i];
+        bool exist = false;
+        for (auto& original_prop: props_from_original) {
+            if ((bool)((original_prop - propi).expand() == 0)) {
+                exist = true;
+                break;
+            }
+        }
+        if (exist) {
+            new_top_sector |= (1ul << i);
+            new_top_sector_vec.push_back(1);
+        } else 
+            new_top_sector_vec.push_back(0);
+    }
+
+    std::cerr << "BoundaryRegion: boundary region has top sector " << new_top_sector << "\n";
+    return presubf.is_zero(new_top_sector_vec);
 }
 
 

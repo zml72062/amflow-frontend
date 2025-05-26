@@ -17,6 +17,8 @@ OBJS      = ${OBJDIR}/amflow.cpp.o    \
 			${OBJDIR}/boundary.cpp.o  \
 			${OBJDIR}/border.cpp.o    \
 			${OBJDIR}/singlesetup.cpp.o\
+			${OBJDIR}/ending.cpp.o    \
+			${OBJDIR}/etascheme.cpp.o \
 			${OBJDIR}/solve.cpp.o     \
 			${OBJDIR}/main.cpp.o
 

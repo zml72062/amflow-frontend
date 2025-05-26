@@ -48,4 +48,47 @@ inline GiNaC::lst matrix_to_lst(const GiNaC::matrix& mat) {
 }
 
 
+/**
+ * Add all factors of `poly` to `lst`.
+ */
+inline void set_factors(const GiNaC::ex& poly, GiNaC::lst& lst) {
+    if (!GiNaC::is_exactly_a<GiNaC::mul>(poly)) {
+        lst.append(poly);
+        return;
+    }
+
+    for (auto iter = poly.begin(); iter != poly.end(); ++iter)
+        set_factors(*iter, lst);
+}
+
+
+inline std::vector<GiNaC::lst> all_combinations(const GiNaC::lst& haystack, int r) {
+    if (r == 0) {
+        std::vector<GiNaC::lst> result;
+        result.push_back(GiNaC::lst());
+        return result;
+    }
+
+    int n = haystack.nops();
+    if (n < r)
+        return std::vector<GiNaC::lst>();
+    
+    std::vector<GiNaC::lst> result;
+    for (int i = 0; i < n - r + 1; i++) {
+        GiNaC::lst new_haystack;
+        for (int j = i + 1; j < n; j++)
+            new_haystack.append(haystack[j]);
+        auto partial_combinations = all_combinations(new_haystack, r - 1);
+        for (auto& p_comb: partial_combinations) {
+            GiNaC::lst lneedle;
+            lneedle.append(haystack[i]);
+            for (auto& needle: p_comb)
+                lneedle.append(needle);
+            result.push_back(lneedle);
+        }
+    }
+    return result;
+}
+
+
 #endif // UTILS_HPP

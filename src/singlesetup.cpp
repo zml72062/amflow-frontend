@@ -51,7 +51,7 @@ void integral_system::determine_boundaries() {
     auto all_regions = boundary_region::all_boundary_regions(*pfamily, master_sector);
     for (auto& region: all_regions) {
         std::cerr << "SingleSetup: considering region " << region.to_string() << "\n";
-        if (!region.is_trivial_region(master_sector, tempdirstr.c_str(), *pconfig))
+        if (!region.is_trivial_region(master_sector))
             regions.push_back(region);
         else
             std::cerr << "SingleSetup: region " << region.to_string() << " is a trivial region\n";

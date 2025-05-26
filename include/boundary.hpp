@@ -30,6 +30,11 @@ struct boundary_region {
                            const char* workdir, const YAML::Node& config);
 
     /**
+     * Determine whether the current region is trivial.
+     */
+    bool is_trivial_region(const std::vector<int>& top_sector);
+
+    /**
      * Compute the overall factor in the leading asymptotic expansion
      * of integral `intgr` in the vicinity of "eta" around infinity.
      */

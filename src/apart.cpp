@@ -1,18 +1,5 @@
 #include "apart.hpp"
-
-
-/**
- * Add all factors of `poly` to `lst`.
- */
-static void set_factors(const GiNaC::ex& poly, GiNaC::lst& lst) {
-    if (!GiNaC::is_exactly_a<GiNaC::mul>(poly)) {
-        lst.append(poly);
-        return;
-    }
-
-    for (auto iter = poly.begin(); iter != poly.end(); ++iter)
-        set_factors(*iter, lst);
-}
+#include "utils.hpp"
 
 
 /**
