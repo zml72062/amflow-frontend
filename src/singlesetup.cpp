@@ -121,6 +121,42 @@ void integral_system::determine_border() {
 }
 
 
+void integral_system::determine_direction() {
+    auto prop_pres = pfamily->propagator_prescription();
+    int  n_props   = master_sector.size();
+    std::vector<int> interested_props;
+    for (int i = 0; i < n_props; i++) {
+        if (master_sector[i] && (pfamily->propagators[i].has((*psymbols)["eta"]))) {
+            interested_props.push_back(i);
+        }
+    }
+    int n_pos = 0, n_neg = 0, n_zero = 0, n_failed = 0;
+    for (auto& prop: interested_props) {
+        if (prop_pres[prop] == 1) {
+            n_pos++;
+        } else if (prop_pres[prop] == -1) {
+            n_neg++;
+        } else if (prop_pres[prop] == 0) {
+            n_zero++;
+        } else if (prop_pres[prop] == integralfamily::PRES_FAILED) {
+            n_failed++;
+        }
+    }
+    if ((n_failed != 0) || (n_pos != 0 && n_neg != 0)) {
+        std::cerr << "SingleSetup: cannot define a self-consistent direction for continuation\n";
+        exit(1);
+    }
+
+    std::ofstream out(std::filesystem::path(workdirstr).append("DIRECTION"));
+    if (n_neg != 0) {
+        out << "Im\n";
+    } else {
+        out << "NegIm\n";
+    }
+    out.close();
+}
+
+
 void integral_system::setup_subfamilies() {
     auto subsysdir = std::filesystem::path(workdirstr).append("SUBSYSTEMS");
     std::filesystem::create_directory(subsysdir);

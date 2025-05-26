@@ -36,6 +36,7 @@ public:
     void build_diffeq         ();
     void determine_boundaries ();
     void determine_border     ();
+    void determine_direction  ();
     void setup_subfamilies    ();
 
 private:

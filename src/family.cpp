@@ -496,6 +496,44 @@ GiNaC::lst integralfamily::loop_momenta() const {
 }
 
 
+std::vector<int> integralfamily::propagator_prescription() const {
+    std::vector<int> prop_pres;
+    int n_pres = prescription.size();
+    for (auto& prop: propagators) {
+        if (n_pres == 0) {
+            prop_pres.push_back(1);
+            continue;
+        }
+        
+        // now "n_pres" should equal number of loops
+        std::vector<int> pre_pos, pre_neg, pre_zero;
+        for (int i = 0; i < n_pres; i++) {
+            if (prop.has(loops[i])) {
+                if (prescription[i] == 1) {
+                    pre_pos.push_back(i);
+                } else if (prescription[i] == -1) {
+                    pre_neg.push_back(i);
+                } else if (prescription[i] == 0) {
+                    pre_zero.push_back(i);
+                }
+            }
+        }
+
+        bool no_pos = (pre_pos.size() == 0), no_neg = (pre_neg.size() == 0);
+        if (no_pos && no_neg) {
+            prop_pres.push_back(0);
+        } else if (no_pos) {
+            prop_pres.push_back(-1);
+        } else if (no_neg) {
+            prop_pres.push_back(1);
+        } else {
+            prop_pres.push_back(PRES_FAILED);
+        }
+    }
+    return prop_pres;
+}
+
+
 bool integralfamily::is_zero(const std::vector<int>& top_sector) {
     // a zero top sector must be trivial
     bool all_zero_top = true;

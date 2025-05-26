@@ -21,27 +21,36 @@ amflow::amflow(const char* config_path) {
     globals["eta"] = GiNaC::symbol("eta");      // auxiliary mass
 
     family = integralfamily::from_yaml(config, &globals);
+    std::cout << family.to_string() << "\n";
+    std::cout << family.propagator_prescription() << "\n";
+    // family.generate_components({1,1,1,1,1,1,1});
+    // auto newfamily = family.insert_eta({1,1,1,1,1,1,1}, {Prescription});
+    // if (newfamily == nullptr)
+    //     std::cout << "null\n";
+    // else
+    //     std::cout << newfamily->to_string() << "\n";
 
-    integral_system sys(family, {{1,1,1,2},{1,1,1,1}},{},config, "/root/amflow_cpp_test2");
+    integral_system sys(family, {{1,1,1,1,1,1,1},{1,2,1,1,1,1,1}},{},config, "/root/amflow_cpp_test3");
     sys.reduce_targets();
     sys.build_diffeq();
     sys.determine_boundaries();
     sys.determine_border();
+    sys.determine_direction();
     sys.setup_subfamilies();
 
-    std::ifstream in(std::filesystem::path("/root/amflow_cpp_test2").append("DIFFEQ"));
-    std::string diffeq_str;
-    for (int i = 0; i < 4; i++)
-        in >> diffeq_str;
-    in.close();
+    // std::ifstream in(std::filesystem::path("/root/amflow_cpp_test2").append("DIFFEQ"));
+    // std::string diffeq_str;
+    // for (int i = 0; i < 4; i++)
+    //     in >> diffeq_str;
+    // in.close();
 
-    auto solver = run_solve::from_string(diffeq_str, GiNaC::numeric(1)/100, "NegIm", config);
-    std::vector<boundary_condition> v;
-    boundary_condition a1;
-    a1.exponent = 1-globals["eps"];
-    a1.expansion = {{}, {1}, {}, {}, {}, {}};
-    v.push_back(a1);
-    std::cout << solver.link(v) << std::endl;
+    // auto solver = run_solve::from_string(diffeq_str, GiNaC::numeric(1)/100, "NegIm", config);
+    // std::vector<boundary_condition> v;
+    // boundary_condition a1;
+    // a1.exponent = 1-globals["eps"];
+    // a1.expansion = {{}, {1}, {}, {}, {}, {}};
+    // v.push_back(a1);
+    // std::cout << solver.link(v) << std::endl;
 }
 
 

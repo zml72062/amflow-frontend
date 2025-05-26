@@ -122,7 +122,7 @@ void kira_agent::write_integralfamilies_yaml(std::ostream& stream, unsigned long
         int nprops = cut().size(), ncut = 0;
         for (int i = 0; i < nprops; i++)
             if (cut()[i])
-                stream << ",["[ncut++ == 0] << i;
+                stream << ",["[ncut++ == 0] << (i + 1);
         stream << "]\n";
     }
 }

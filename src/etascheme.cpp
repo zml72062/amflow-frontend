@@ -23,8 +23,19 @@ static int is_subset(const GiNaC::lst& sublist, const std::vector<int>& fulllist
 static std::vector<int> eta_position(const component& comp, eta_scheme scheme) {
     switch (scheme) {
         case Prescription: {
-            std::cerr << "EtaScheme: currently, we do not support Prescription\n";
-            return {};
+            std::vector<int> prop_pres = comp.pfamily->propagator_prescription();
+            std::vector<int> pre_neg_props;
+            for (auto& idx: comp.propagator_indices) {
+                if (is_cut(comp, idx))
+                    continue;
+                if (prop_pres[idx] == integralfamily::PRES_FAILED) {
+                    std::cerr << "EtaScheme: propagators have conflicting prescriptions\n";
+                    return {};
+                }
+                if (prop_pres[idx] == -1)
+                    pre_neg_props.push_back(idx);
+            }
+            return pre_neg_props;
         }
         case Mass: {
             GiNaC::lst mass_list = comp.pfamily->masses();

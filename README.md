@@ -19,6 +19,7 @@ git submodule update
 | GiNaC | 1.8.8 | https://www.ginac.de/ | 
 | FLINT | 3.3.0-dev | https://flintlib.org/ |
 | Kira | 2.3 | https://gitlab.com/kira-pyred/kira |
+| Fermat | 6.5 | https://home.bway.net/lewis/zip.html |
 
 
 

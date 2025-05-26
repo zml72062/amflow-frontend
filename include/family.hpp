@@ -124,6 +124,14 @@ struct integralfamily {
      */
     GiNaC::lst loop_momenta() const;
 
+    /**
+     * Prescription of each propagator, can be 1, 0, -1 or 
+     * PRES_FAILED (2).
+     */
+    std::vector<int> propagator_prescription() const;
+
+    inline static const int PRES_FAILED = 2;
+
 
     /******************************************************/
     /*        SECTOR-DEPENDENT FIELDS AND METHODS         */
