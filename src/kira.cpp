@@ -129,6 +129,23 @@ void kira_agent::write_integralfamilies_yaml(std::ostream& stream, unsigned long
 
 
 void kira_agent::write_kinematics_yaml(std::ostream& stream) {
+    if (indeplegs().nops() == 0) { // vacuum integrals
+        stream << "kinematics:\n"
+               << "  incoming_momenta: []\n"
+               << "  outgoing_momenta: []\n"
+               << "  momentum_conservation:\n"
+               << "  kinematic_invariants:\n";
+
+        for (auto& prop: propagators()) {
+            if (prop.diff(GiNaC::ex_to<GiNaC::symbol>(psymbols()->at("eta"))) != 0) {
+                // there is eta dependence in propagators
+                stream << "    - [eta, 2]\n";
+                break;
+            }
+        }
+        stream << "  scalarproduct_rules:\n";
+        return;
+    }
     GiNaC::symbol auxleg(name() + "AuxLeg");
     GiNaC::ex     auxconservation = 0;
     std::for_each(indeplegs().begin(), indeplegs().end(), 
