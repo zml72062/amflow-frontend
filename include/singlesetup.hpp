@@ -9,6 +9,7 @@
 #include "reduction.hpp"
 #include "boundary.hpp"
 #include "etascheme.hpp"
+#include <memory>
 
 
 /**
@@ -70,14 +71,16 @@ public:
      * subfamilies arising from the boundary regions, and reduce all
      * boundary integrals.
      */
-    void setup_subfamilies    ();
+    std::vector<std::pair<std::shared_ptr<integralfamily>, integral_system>> 
+    setup_subfamilies           ();
 
     /**
      * Assuming that a set of master integrals have been found, insert
      * eta to the current integral family to construct a new family of
      * integrals, and find master integrals of the new family.
      */
-    void setup_eta              ();
+    std::vector<std::pair<std::shared_ptr<integralfamily>, integral_system>>
+    setup_eta                   ();
 
     /**
      * Assuming that the current integral family is a single-mass vacuum
@@ -87,7 +90,8 @@ public:
      * integrals of the current family to master integrals of the subfa-
      * milies.
      */
-    void setup_singlemass_vacuum();
+    std::vector<std::pair<std::shared_ptr<integralfamily>, integral_system>>
+    setup_singlemass_vacuum     ();
 
     /**
      * Assuming that the current integral family is a purely phase-space
@@ -95,7 +99,10 @@ public:
      * the current integral family, setup a new family of loop integrals
      * whose imaginary part corresponds to the current family.
      */
-    void setup_purely_phasespace();
+    std::vector<std::pair<std::shared_ptr<integralfamily>, integral_system>>
+    setup_purely_phasespace     ();
+
+    friend class amflow;
 private:
     integralfamily*                       pfamily;
     GiNaC::symtab*                        psymbols;

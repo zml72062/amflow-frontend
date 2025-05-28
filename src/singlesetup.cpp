@@ -188,7 +188,7 @@ void integral_system::determine_border() {
             int  border_one = 0;
             for (auto& presult: result) {
                 auto diff = GiNaC::ex_to<GiNaC::numeric>(-presult.first - numeric_exp);
-                if (GiNaC::is_nonneg_integer(diff)) {
+                if (GiNaC::is_integer(diff)) {
                     exist = true;
                     border_one = presult.second[i] - diff.to_int();
                     break;
@@ -247,13 +247,15 @@ void integral_system::determine_direction() {
 }
 
 
-void integral_system::setup_subfamilies() {
+std::vector<std::pair<std::shared_ptr<integralfamily>, integral_system>> 
+integral_system::setup_subfamilies() {
     auto subsysdir = std::filesystem::path(workdirstr).append("SUBSYSTEMS");
     std::filesystem::create_directory(subsysdir);
     auto boundaryconddir = std::filesystem::path(workdirstr).append("BOUNDARY_CONDITION");
     std::filesystem::create_directory(boundaryconddir);
 
     int nregions = regions.size(), familycnt = 0, startingcnt = 0, nmasters = masters.size();
+    std::vector<std::pair<std::shared_ptr<integralfamily>, integral_system>> subsystem_ptrs;
     for (int r = 0; r < nregions; r++) {
         startingcnt = familycnt;
         auto subintgr = regions[r].subintegrals(master_sector, masters, borders[r]);
@@ -265,6 +267,7 @@ void integral_system::setup_subfamilies() {
                 indices.push_back(idx.indices);
             integral_system subsystem(*subf.first, indices, {}, *pconfig, cursubsysdir.c_str());
             subsystem.reduce_targets();
+            subsystem_ptrs.push_back({subf.first, subsystem});
             familycnt++;
         }
 
@@ -287,15 +290,17 @@ void integral_system::setup_subfamilies() {
         }
         out.close();
     }
+    return subsystem_ptrs;
 }
 
 
-void integral_system::setup_eta() {
+std::vector<std::pair<std::shared_ptr<integralfamily>, integral_system>>
+integral_system::setup_eta() {
     master_sector = top_sector(masters);
     auto newfamily = pfamily->insert_eta(master_sector, eta_mode);
     if (newfamily == nullptr) {
         std::cerr << "SingleSetup: the current system is an ending system\n";
-        return;
+        return {};
     }
 
     auto eta_dir = std::filesystem::path(workdirstr).append("ETA_SYSTEM");
@@ -307,15 +312,17 @@ void integral_system::setup_eta() {
     
     integral_system etasystem(*newfamily, newtargets, {}, *pconfig, eta_dir.c_str());
     etasystem.reduce_targets();
+    return {{newfamily, etasystem}};
 }
 
 
-void integral_system::setup_singlemass_vacuum() {
+std::vector<std::pair<std::shared_ptr<integralfamily>, integral_system>>
+integral_system::setup_singlemass_vacuum() {
     master_sector = top_sector(masters);
     // do nothing if current integral family is not a single-mass
     // vacuum type ending family
     if (!pfamily->is_singlemass_vacuum_ending(master_sector))
-        return;
+        return {};
 
     auto vacuum_subsysdir = std::filesystem::path(workdirstr).append("VACUUM_SUBSYSTEMS");
     std::filesystem::create_directory(vacuum_subsysdir);
@@ -391,6 +398,7 @@ void integral_system::setup_singlemass_vacuum() {
     auto loop_list = pfamily->loop_momenta();
     GiNaC::ex component_mass;
     int subsyscnt = 0;
+    std::vector<std::pair<std::shared_ptr<integralfamily>, integral_system>> subsystem_ptrs;
     for (auto& comp: pfamily->all_components) {
         auto comp_props = comp.propagator_indices;
         // for every component, choose a new set of loop momenta
@@ -557,33 +565,41 @@ void integral_system::setup_singlemass_vacuum() {
         prefactor_out.close();
 
         if (L > 1) {
-            integralfamily pintf;
-            pintf.name               = pfamily->name;
-            pintf.psymbols           = psymbols;
-            pintf.loops              = pint_loops;
-            pintf.indeplegs          = {newl1};
-            pintf.propagators        = pint_propagators;
-            pintf.cut                = {};
-            pintf.prescription       = {};
-            pintf.conservation_rules = {};
-            pintf.numeric_rules      = pfamily->numeric_rules;
-            pintf.sps_numeric_rules  = {newl1 * newl1 == -1};
+            std::shared_ptr<integralfamily> pintf = std::make_shared<integralfamily>();
+            pintf->name               = pfamily->name;
+            pintf->psymbols           = psymbols;
+            pintf->loops              = pint_loops;
+            pintf->indeplegs          = {newl1};
+            pintf->propagators        = pint_propagators;
+            pintf->cut                = {};
+            pintf->prescription       = {};
+            pintf->conservation_rules = {};
+            pintf->numeric_rules      = pfamily->numeric_rules;
+            pintf->sps_numeric_rules  = {newl1 * newl1 == -1};
 
-            integral_system pint_sys(pintf, pint_targets, {}, *pconfig, pintsysdir.c_str());
+            integral_system pint_sys(*pintf, pint_targets, {}, *pconfig, pintsysdir.c_str());
             pint_sys.reduce_targets();
+            subsystem_ptrs.push_back({pintf, pint_sys});
+        } else {
+            std::shared_ptr<integralfamily> pintf = std::make_shared<integralfamily>();
+            integral_system pint_sys(*pintf, {}, {}, *pconfig, pintsysdir.c_str());
+            subsystem_ptrs.push_back({nullptr, pint_sys});
         }
 
         subsyscnt++;
     }
+
+    return subsystem_ptrs;
 }
 
 
-void integral_system::setup_purely_phasespace() {
+std::vector<std::pair<std::shared_ptr<integralfamily>, integral_system>>
+integral_system::setup_purely_phasespace() {
     master_sector = top_sector(masters);
     // do nothing if current integral family is not a purely
     // phase-space type ending family
     if (!pfamily->is_purely_phasespace_ending(master_sector))
-        return;
+        return {};
 
     int n_cut_loops = 0;
     for (auto& comp: pfamily->all_components) {
@@ -596,17 +612,17 @@ void integral_system::setup_purely_phasespace() {
     auto phase_subsysdir = std::filesystem::path(workdirstr).append("PHASE_SUBSYSTEMS");
     std::filesystem::create_directory(phase_subsysdir);
 
-    integralfamily newf;
-    newf.name               = pfamily->name;
-    newf.psymbols           = psymbols;
-    newf.loops              = pfamily->loops;
-    newf.indeplegs          = pfamily->indeplegs;
-    newf.propagators        = pfamily->propagators;
-    newf.cut                = {};
-    newf.prescription       = {};
-    newf.conservation_rules = pfamily->conservation_rules;
-    newf.numeric_rules      = pfamily->numeric_rules;
-    newf.sps_numeric_rules  = pfamily->sps_numeric_rules;
+    std::shared_ptr<integralfamily> newf = std::make_shared<integralfamily>();
+    newf->name               = pfamily->name;
+    newf->psymbols           = psymbols;
+    newf->loops              = pfamily->loops;
+    newf->indeplegs          = pfamily->indeplegs;
+    newf->propagators        = pfamily->propagators;
+    newf->cut                = {};
+    newf->prescription       = {};
+    newf->conservation_rules = pfamily->conservation_rules;
+    newf->numeric_rules      = pfamily->numeric_rules;
+    newf->sps_numeric_rules  = pfamily->sps_numeric_rules;
 
     std::vector<std::vector<int>> newtargets;
     for (auto& mi: masters) {
@@ -624,7 +640,8 @@ void integral_system::setup_purely_phasespace() {
     prefactor_out << "after taking imaginary part\n";
     prefactor_out.close();
 
-    integral_system newsys(newf, newtargets, {}, *pconfig, phase_subsysdir.c_str());
+    integral_system newsys(*newf, newtargets, {}, *pconfig, phase_subsysdir.c_str());
     newsys.reduce_targets();
+    return {{newf, newsys}};
 }
 

@@ -10,7 +10,7 @@
 #define START_TIME(description) auto description##_begin = std::chrono::high_resolution_clock::now()
 #define END_TIME(description) auto description##_end = std::chrono::high_resolution_clock::now(); \
     std::chrono::duration<double, std::milli> description##_time_ms = description##_end - description##_begin
-#define PRINT_TIME(description) std::cout << "Takes " << description##_time_ms.count() << " ms on " << #description << "()" << std::endl
+#define PRINT_TIME(description) std::cerr << "Takes " << description##_time_ms.count() << " ms on " << #description << "()" << std::endl
 
 
 inline bool has_non_null_key(const YAML::Node& node, const std::string& key) {
