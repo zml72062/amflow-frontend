@@ -179,8 +179,10 @@ void integral_system::determine_border() {
     }
 
     int n_masters = masters.size();
+    std::vector<std::vector<int>> spurious_orders;
     for (auto& region: regions) {
         borders.push_back({});
+        spurious_orders.push_back({});
         for (int i = 0; i < n_masters; i++) {
             auto numeric_exp = region.exponent(masters[i])
                 .subs((*psymbols)["d"] == (d0 - 2 * eps_value), GiNaC::subs_options::algebraic);
@@ -191,6 +193,10 @@ void integral_system::determine_border() {
                 if (GiNaC::is_integer(diff)) {
                     exist = true;
                     border_one = presult.second[i] - diff.to_int();
+                    if (diff.to_int() >= 0)
+                        spurious_orders.back().push_back(0);
+                    else
+                        spurious_orders.back().push_back(-diff.to_int());
                     break;
                 }
             }
@@ -202,11 +208,17 @@ void integral_system::determine_border() {
         }
     }
 
-    std::ofstream out(std::filesystem::path(workdirstr).append("BORDERS"));
+    std::ofstream borderout(std::filesystem::path(workdirstr).append("BORDERS"));
     for (auto& border: borders) {
-        out << "[" << border << "]\n";
+        borderout << "{" << border << "}\n";
     }
-    out.close();
+    borderout.close();
+
+    std::ofstream spuriousout(std::filesystem::path(workdirstr).append("SPURIOUS_ORDERS"));
+    for (auto& order: spurious_orders) {
+        spuriousout << "{" << order << "}\n";
+    }
+    spuriousout.close();
 }
 
 
@@ -271,6 +283,7 @@ integral_system::setup_subfamilies() {
             familycnt++;
         }
 
+        // human readable format
         std::ofstream out(std::filesystem::path(boundaryconddir).append(std::to_string(r)));
         for (int i = 0; i < nmasters; i++) {
             out << masters[i] << " = " << regions[r].factor(masters[i])
@@ -289,6 +302,45 @@ integral_system::setup_subfamilies() {
             out << ");\n\n";
         }
         out.close();
+
+        // machine friendly format
+        std::string machine_dir = std::filesystem::path(boundaryconddir).append(std::to_string(r) + "_machine");
+        std::filesystem::create_directory(std::filesystem::path(machine_dir));
+        std::ofstream exponentout(std::filesystem::path(machine_dir).append("EXPONENT"));
+        GiNaC::lst exponentlist;
+        for (int i = 0; i < nmasters; i++)
+            exponentlist.append(regions[r].exponent(masters[i]));
+        exponentout << exponentlist << "\n";
+        exponentout.close();
+
+        std::ofstream jacobianout(std::filesystem::path(machine_dir).append("JACOBIAN"));
+        jacobianout << GiNaC::pow(GiNaC::abs(regions[r].transform.determinant()), (*(regions[r].pfamily->psymbols))["d"]) << "\n";
+        jacobianout.close();
+
+        std::ofstream expansionout(std::filesystem::path(machine_dir).append("EXPANSION"));
+        GiNaC::lst expansionlist;
+        for (int i = 0; i < nmasters; i++) {
+            GiNaC::lst sublist;
+            int order = subintgr.second[i].size();
+            if (order == 0)
+                expansionlist.append(sublist);
+            else {
+                for (int o = 0; o < order; o++) {
+                    GiNaC::ex order_ex = 0;
+                    for (auto& p: subintgr.second[i][o])
+                        order_ex += (p.second * 
+                            GiNaC::symbol("subfamily"
+                                 + std::to_string(p.first.first + startingcnt) 
+                                 + "integral" + std::to_string(p.first.second)
+                            )
+                        );
+                    sublist.append(order_ex);
+                }
+                expansionlist.append(sublist);
+            }
+        }
+        expansionout << expansionlist << "\n";
+        expansionout.close();
     }
     return subsystem_ptrs;
 }
@@ -448,10 +500,16 @@ integral_system::setup_singlemass_vacuum() {
             newrule = (pfamily->loops[norm_one_idx] == newl1_expand);
         }
 
+        GiNaC::lst zero_ps;
+        for (auto& p: pfamily->indeplegs) {
+            zero_ps.append(p == 0);
+        }
+
         GiNaC::lst new_propagators;
         int new_p = 0, new_nonzero_p = 0;
         for (auto& p: comp_props) {
-            new_propagators.append(pfamily->propagators[p].subs(newrule, GiNaC::subs_options::algebraic));
+            new_propagators.append(pfamily->propagators[p].subs(newrule, GiNaC::subs_options::algebraic)
+                                                          .subs(zero_ps, GiNaC::subs_options::algebraic));
             if (p == nonzero_p)
                 new_nonzero_p = new_p;
             new_p++;
@@ -467,6 +525,27 @@ integral_system::setup_singlemass_vacuum() {
                 }
             }
         }
+
+        int n_new_propagators = new_propagators.nops();
+        GiNaC::matrix coeff(0, n_new_propagators);
+        GiNaC::lst    remove_loops, final_new_loops;
+        for (auto& l: new_loops) {
+            GiNaC::matrix new_row(1, n_new_propagators);
+            for (int i = 0; i < n_new_propagators; i++) {
+                new_row(0, i) = new_propagators[i].diff(GiNaC::ex_to<GiNaC::symbol>(l)).expand();
+            }
+            auto new_coeff = append_row(coeff, new_row);
+            if (new_coeff.rank() > coeff.rank()) {
+                coeff = new_coeff;
+                final_new_loops.append(l);
+            } else {
+                remove_loops.append(l == 0);
+            }
+        }
+        for (int i = 0; i < n_new_propagators; i++) {
+            new_propagators[i] = new_propagators[i].subs(remove_loops, GiNaC::subs_options::algebraic);
+        }
+        new_loops = final_new_loops;
 
         integralfamily newf;
         newf.name               = pfamily->name;
@@ -526,6 +605,9 @@ integral_system::setup_singlemass_vacuum() {
             }
             pos++;
         }
+        std::ofstream massiveout(std::filesystem::path(cursubsysdir).append("MASSIVE_PROPAGATOR"));
+        massiveout << remove_pos << "\n";
+        massiveout.close();
 
         int       L = newf.loops.nops();
         GiNaC::ex D = (*psymbols)["d"];

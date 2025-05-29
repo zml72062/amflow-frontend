@@ -8,18 +8,6 @@
 #define EXPAND(m)   (GiNaC::ex_to<GiNaC::matrix>(((GiNaC::ex)(m)).expand()))
 
 
-static GiNaC::matrix append_row(const GiNaC::matrix& _matrix, const GiNaC::matrix& _row) {
-    int r = _matrix.rows(), c = _matrix.cols();
-    GiNaC::matrix newmat(r + 1, c);
-    for (int i = 0; i < r; i++)
-        for (int j = 0; j < c; j++)
-            newmat(i, j) = _matrix(i, j);
-    for (int j = 0; j < c; j++)
-        newmat(r, j) = _row(0, j);
-    return newmat;
-}
-
-
 border_solve::border_solve(const GiNaC::matrix& _coeff, const GiNaC::symbol& _var, const GiNaC::symbol& _eps, const YAML::Node& _config)
     : symdiffeq(NORMAL(SUBS(_coeff, _var == 1 / _var).mul_scalar(-GiNaC::pow(_var, -2))), _var, _eps) {
     GiNaC::lst rules{_var == x, _eps == eps};

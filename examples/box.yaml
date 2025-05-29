@@ -1,0 +1,66 @@
+Install:
+  # Path to Kira executable, version 2.2 or later
+  KiraExecutable: /usr/local/bin/kira
+  # Path to Fermat executable
+  FermatExecutable: /root/ferl6/fer64
+
+AMFlowInfo:
+  # Integral family name
+  Family: box
+  # Loop momenta
+  Loop: [l]
+  # External momenta
+  Leg: [p1, p2, p3, p4]
+  # Momentum conservation rule
+  Conservation: [p4, -p1-p2-p3]
+  # Replacement rules for kinematic invariants
+  Replacement:
+    - [p1^2, 0]
+    - [p2^2, 0]
+    - [p3^2, 0]
+    - [p4^2, 0]
+    - [(p1+p2)^2, s]
+    - [(p1+p3)^2, t]
+  # Propagators
+  Propagator: 
+    - l^2
+    - (l+p1)^2
+    - (l+p1+p2)^2
+    - (l+p1+p2+p4)^2
+  # Numeric values of kinematic invariants
+  Numeric:
+    - [s, 100]
+    - [t, -1]
+
+Run:
+  # Number of threads
+  NThread: 4
+  # Space-time dimension
+  D0: 4
+  # Modes to insert eta, default ["Prescription", "Mass", "Propagator"]
+  AMFMode: [Prescription, Mass, Propagator]
+
+ReduceOption:
+  # Kira integral ordering (should be an integer within 1~8, default 5)
+  IntegralOrder: 5
+  # Reduction mode (should be one of "Masters", "Kira", "FireFly", "Mixed"
+  #  or "NoFactorScan", default "Kira")
+  ReductionMode: Kira
+  # Minimum reduction rank (should be a non-negative integer, default 3)
+  BlackBoxRank: 5
+  # Minimum reduction dot (should be a non-negative integer, default 0)
+  BlackBoxDot: 0
+
+ExpansionOption:
+  # Try order when determining boundary order (default 20)
+  TryOrder: 25
+  # Epsilon value when determining boundary order (default 1/10000)
+  TryEpsilon: 1/10000
+  # Solving order in actual solving procedure (default 100)
+  SolvingOrder: 100
+  # Working precision (default 100)
+  WorkingPre: 50
+  # How many evaluation points at most (default 1000)
+  RunLength: 1000
+
+

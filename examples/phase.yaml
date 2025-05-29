@@ -1,0 +1,59 @@
+Install:
+  # Path to Kira executable, version 2.2 or later
+  KiraExecutable: /usr/local/bin/kira
+  # Path to Fermat executable
+  FermatExecutable: /root/ferl6/fer64
+
+AMFlowInfo:
+  # Integral family name
+  Family: phase
+  # Loop momenta
+  Loop: [l1, l2]
+  # External momenta
+  Leg: [p1, p2]
+  # Momentum conservation rule
+  Conservation: 
+  # Replacement rules for kinematic invariants
+  Replacement:
+    - [p1^2, 0]
+    - [p2^2, 0]
+    - [(p1+p2)^2, s]
+  # Propagators
+  Propagator:
+    - l1^2-msq
+    - (l1+p1)^2
+    - l2^2
+    - (l1+l2+p1)^2
+    - (l1+l2+p1+p2)^2
+    - (l1+l2+p2)^2
+    - (l1+p2)^2
+  # Numeric values of kinematic invariants
+  Numeric:
+    - [s, 100]
+    - [msq, 1]
+  # Feynman prescription of each loop
+  # (should be a list with the same length as "Loop", 
+  #  each element being 1, -1 or 0, where 1 means +i0, 
+  #  -1 means -i0 and 0 means insensitive to prescription)
+  Prescription: [0, 0]
+  # Cut propagators
+  # (should be a list with the same length as "Propagator",
+  #  each element being 1 or 0, specifying whether or not
+  #  the corresponding propagator is on cut)
+  Cut: [1, 0, 1, 0, 1, 0, 0]
+
+Run:
+  # Number of threads
+  NThread: 4
+
+ExpansionOption:
+  # Try order when determining boundary order (default 20)
+  TryOrder: 25
+  # Epsilon value when determining boundary order (default 1/10000)
+  TryEpsilon: 1/10000
+  # Solving order in actual solving procedure (default 100)
+  SolvingOrder: 100
+  # Working precision (default 100)
+  WorkingPre: 50
+  # How many evaluation points at most (default 1000)
+  RunLength: 1000

@@ -11,18 +11,6 @@
 #define EXPAND(m)   (GiNaC::ex_to<GiNaC::matrix>(((GiNaC::ex)(m)).expand()))
 
 
-static GiNaC::matrix append_row(const GiNaC::matrix& _matrix, const GiNaC::matrix& _row) {
-    int r = _matrix.rows(), c = _matrix.cols();
-    GiNaC::matrix newmat(r + 1, c);
-    for (int i = 0; i < r; i++)
-        for (int j = 0; j < c; j++)
-            newmat(i, j) = _matrix(i, j);
-    for (int j = 0; j < c; j++)
-        newmat(r, j) = _row(0, j);
-    return newmat;
-}
-
-
 static GiNaC::ex gnq2q(const GiNaC::ex& gnq) {
     GiNaC::parser parser;
     if (GiNaC::ex_to<GiNaC::numeric>(gnq).is_real()) {
@@ -165,9 +153,9 @@ GiNaC::lst run_solve::get_eval_points() {
             if ((bool)(sing == 0))
                 continue;
             if (GiNaC::abs(sing) < GiNaC::abs(closest))
-                closest = sing;
+                closest = GiNaC::abs(sing);
             if (GiNaC::abs(sing) > GiNaC::abs(farthest))
-                farthest = sing;
+                farthest = GiNaC::abs(sing);
             singularities.append(sing);
         }
         ca_vec_clear(roots, ctx.ctx);

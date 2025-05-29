@@ -322,18 +322,6 @@ bool integralfamily::is_complete_propagator() const {
 }
 
 
-static GiNaC::matrix append_row(const GiNaC::matrix& _matrix, const GiNaC::matrix& _row) {
-    int r = _matrix.rows(), c = _matrix.cols();
-    GiNaC::matrix newmat(r + 1, c);
-    for (int i = 0; i < r; i++)
-        for (int j = 0; j < c; j++)
-            newmat(i, j) = _matrix(i, j);
-    for (int j = 0; j < c; j++)
-        newmat(r, j) = _row(0, j);
-    return newmat;
-}
-
-
 #define SUBMATRIX(m, r, nr, c, nc) GiNaC::ex_to<GiNaC::matrix>(GiNaC::sub_matrix((m), (r), (nr), (c), (nc)))
 
 

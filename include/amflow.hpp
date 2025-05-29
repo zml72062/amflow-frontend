@@ -63,6 +63,7 @@ public:
            const char* work_dir);
 
     void forward();
+    void backward(const GiNaC::numeric& eps_value);
 
     static void usage();
 private:
@@ -82,6 +83,7 @@ private:
     
     // global symbol table
     GiNaC::symtab globals;
+    GiNaC::ex     d0;
 
     // integral family
     integralfamily family;
@@ -96,6 +98,10 @@ private:
     int             nextnum;
     std::queue<int> enroute;
     void report_forward_status();
+
+    // backward pass
+    std::map<int, std::map<std::vector<int>, GiNaC::ex>> subsystem_results;
+    GiNaC::ex get_subsystem_result(int subsysnum, const std::vector<int>& indices);
 };
 
 
