@@ -22,15 +22,6 @@ struct boundary_region {
 
     /**
      * Determine whether the current region is trivial.
-     * 
-     * Note: The arguments `workdir` and `config` are for the need of 
-     * calling Kira.
-     */
-    bool is_trivial_region(const std::vector<int>& top_sector,
-                           const char* workdir, const YAML::Node& config);
-
-    /**
-     * Determine whether the current region is trivial.
      */
     bool is_trivial_region(const std::vector<int>& top_sector);
 
@@ -117,6 +108,12 @@ private:
      * in this region.
      */
     integralfamily preliminary_subfamily(const std::vector<int>& top_sector);
+
+    /**
+     * Generate all possible integral families for boundary integrals in
+     * this region.
+     */
+    std::vector<integralfamily> all_possible_subfamilies(const std::vector<int>& top_sector);
 };
 
 

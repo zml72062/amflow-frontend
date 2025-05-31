@@ -438,7 +438,7 @@ GiNaC::matrix run_solve::infinity_solve(const std::vector<boundary_condition>& b
             integral_constants(span[q], 0) = variables[q].subs(csol, GiNaC::subs_options::algebraic);
     }
 
-    auto result = SUBS(out, eq_inf.x == 1 / first_pnt).mul(integral_constants);
+    auto result = SUBS(SUBS(out, l == GiNaC::log(eq_inf.x)), eq_inf.x == 1 / first_pnt).mul(integral_constants);
     for (int i = 0; i < eq_inf.N(); i++)
         result(i, 0) = GiNaC::ex_to<GiNaC::numeric>(result(i, 0)).evalf();
     

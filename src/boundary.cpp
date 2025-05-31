@@ -62,6 +62,9 @@ static bool is_large_momentum(const GiNaC::matrix& expansion_coeff, const std::v
 }
 
 
+#define SUBMATRIX(m, r, nr, c, nc) GiNaC::ex_to<GiNaC::matrix>(GiNaC::sub_matrix((m), (r), (nr), (c), (nc)))
+
+
 std::vector<boundary_region> boundary_region::all_boundary_regions(integralfamily& family, const std::vector<int>& top_sector) {
     if (top_sector.size() != family.propagators.nops()) {
         std::cerr << "BoundaryRegion: wrong top sector input\n";
@@ -163,68 +166,37 @@ std::vector<boundary_region> boundary_region::all_boundary_regions(integralfamil
 
 
 bool boundary_region::is_trivial_region(const std::vector<int>& top_sector) {
-    integralfamily presubf = preliminary_subfamily(top_sector);
-    GiNaC::lst props_from_original;
-    int nprop = top_sector.size();
-    for (int i = 0; i < nprop; i++)
-        if (top_sector[i])
-            props_from_original.append(new_leading_propagators[0][i]);
-    
-    unsigned long new_top_sector = 0;
-    std::vector<int> new_top_sector_vec;
-    for (int i = 0; i < nprop; i++) {
-        auto propi = presubf.propagators[i];
-        bool exist = false;
-        for (auto& original_prop: props_from_original) {
-            if ((bool)((original_prop - propi).expand() == 0)) {
-                exist = true;
-                break;
+    auto all_subfamilies = all_possible_subfamilies(top_sector);
+    for (auto& subf: all_subfamilies) {
+        GiNaC::lst props_from_original;
+        int nprop = top_sector.size();
+        for (int i = 0; i < nprop; i++)
+            if (top_sector[i])
+                props_from_original.append(new_leading_propagators[0][i]);
+        
+        unsigned long new_top_sector = 0;
+        std::vector<int> new_top_sector_vec;
+        for (int i = 0; i < nprop; i++) {
+            auto propi = subf.propagators[i];
+            bool exist = false;
+            for (auto& original_prop: props_from_original) {
+                if ((bool)((original_prop - propi).expand() == 0)) {
+                    exist = true;
+                    break;
+                }
             }
+            if (exist) {
+                new_top_sector |= (1ul << i);
+                new_top_sector_vec.push_back(1);
+            } else 
+                new_top_sector_vec.push_back(0);
         }
-        if (exist) {
-            new_top_sector |= (1ul << i);
-            new_top_sector_vec.push_back(1);
-        } else 
-            new_top_sector_vec.push_back(0);
+        
+        if (!subf.is_zero(new_top_sector_vec))
+            return false;
     }
 
-    std::cerr << "BoundaryRegion: boundary region has top sector " << new_top_sector << "\n";
-    return presubf.is_zero(new_top_sector_vec);
-}
-
-
-bool boundary_region::is_trivial_region(const std::vector<int>& top_sector,
-                                        const char* workdir, const YAML::Node& config) {
-    integralfamily presubf = preliminary_subfamily(top_sector);
-    GiNaC::lst props_from_original;
-    int nprop = top_sector.size();
-    for (int i = 0; i < nprop; i++)
-        if (top_sector[i])
-            props_from_original.append(new_leading_propagators[0][i]);
-    
-    unsigned long new_top_sector = 0;
-    for (int i = 0; i < nprop; i++) {
-        auto propi = presubf.propagators[i];
-        bool exist = false;
-        for (auto& original_prop: props_from_original) {
-            if ((bool)((original_prop - propi).expand() == 0)) {
-                exist = true;
-                break;
-            }
-        }
-        if (exist)
-            new_top_sector |= (1ul << i);
-    }
-
-    std::cerr << "BoundaryRegion: boundary region has top sector " << new_top_sector << "\n";
-    
-    kira_agent agent(config, presubf);
-    auto trivial_sectors = agent.trivial_sectors(workdir, new_top_sector);
-    for (auto& trivsect: trivial_sectors)
-        if (trivsect == new_top_sector)
-            return true;
-    
-    return false;
+    return true;
 }
 
 
@@ -322,6 +294,104 @@ GiNaC::ex boundary_region::compute_expansion_in_new_leading_propagators(const Gi
     for (int i = 0; i < S; i++)
         bias_new += coeff_new(0, i) * new_propagator_symbols[i];
     return bias_new.expand();
+}
+
+
+std::vector<integralfamily> boundary_region::all_possible_subfamilies(const std::vector<int>& top_sector) {
+    if (top_sector.size() != pfamily->propagators.nops()) {
+        std::cerr << "BoundaryRegion: wrong top sector input\n";
+        exit(1);
+    }
+
+    std::vector<integralfamily> subfamilies;
+    compute_new_leading_propagators();
+
+    // select leading propagators corresponding to the top sector
+    GiNaC::lst top_level_leading_props;
+    int nprop = top_sector.size();
+    for (int i = 0; i < nprop; i++)
+        if (top_sector[i])
+            top_level_leading_props.append(new_leading_propagators[0][i]);
+
+    std::vector<int> newcut;
+    if (pfamily->cut.size() != 0)
+        for (int i = 0; i < nprop; i++)
+            if (top_sector[i])
+                newcut.push_back(pfamily->cut[i]);
+
+    // find number of linearly independent propagators
+    int n_loops = pfamily->loops.nops(), n_legs = pfamily->indeplegs.nops();
+    int S = n_loops * (n_loops + 1) / 2 + n_loops * n_legs;
+    GiNaC::matrix coeff(top_level_leading_props.nops(), S);
+    for (int p = 0; p < (int)top_level_leading_props.nops(); p++) {
+        int q = 0;
+        GiNaC::ex prop = top_level_leading_props[p];
+        for (int i = 0; i < n_loops; i++) {
+            GiNaC::ex i_deriv = prop.diff(GiNaC::ex_to<GiNaC::symbol>(pfamily->loops[i])).expand();
+            coeff(p, q++) = i_deriv.diff(GiNaC::ex_to<GiNaC::symbol>(pfamily->loops[i])).expand() / 2;
+            for (int j = i + 1; j < n_loops; j++)
+                coeff(p, q++) = i_deriv.diff(GiNaC::ex_to<GiNaC::symbol>(pfamily->loops[j])).expand();
+        }
+        for (int i = 0; i < n_loops; i++) {
+            GiNaC::ex i_deriv = prop.diff(GiNaC::ex_to<GiNaC::symbol>(pfamily->loops[i])).expand();
+            for (int j = 0; j < n_legs; j++)
+                coeff(p, q++) = i_deriv.diff(GiNaC::ex_to<GiNaC::symbol>(pfamily->indeplegs[j])).expand();
+        }
+    }
+
+    GiNaC::matrix selected_indep_rows(0, S);
+    int next_row = 0, accum_rank = 0;
+    while (next_row != (int)top_level_leading_props.nops()) {
+        auto new_selected_indep_rows = append_row(selected_indep_rows, SUBMATRIX(coeff, next_row++, 1, 0, S));
+        if ((int)new_selected_indep_rows.rank() > accum_rank) {
+            selected_indep_rows = new_selected_indep_rows;
+            accum_rank++;
+        }
+    }
+    
+    GiNaC::lst all_indices;
+    int n_leading_props = top_level_leading_props.nops();
+    for (int i = 0; i < n_leading_props; i++) {
+        all_indices.append(i);
+    }
+    auto choices = all_combinations(all_indices, accum_rank);
+
+    for (auto& choice: choices) {
+        std::vector<int> chosen_indices;
+        for (auto& id: choice) {
+            chosen_indices.push_back(GiNaC::ex_to<GiNaC::numeric>(id).to_int());
+        }
+        GiNaC::matrix chosen_rows(accum_rank, S);
+        for (int i = 0; i < accum_rank; i++)
+            for (int j = 0; j < S; j++)
+                chosen_rows(i, j) = coeff(chosen_indices[i], j);
+        if ((int)chosen_rows.rank() < accum_rank)
+            continue;
+        
+        integralfamily newfamily;
+        newfamily.name         = pfamily->name;
+        newfamily.psymbols     = pfamily->psymbols;
+        newfamily.loops        = pfamily->loops;
+        newfamily.indeplegs    = pfamily->indeplegs;
+        for (auto& id: chosen_indices)
+            newfamily.propagators.append(top_level_leading_props[id]);
+        if (newcut.size() != 0)
+            for (auto& id: chosen_indices)
+                newfamily.cut.push_back(newcut[id]);
+        newfamily.prescription = pfamily->prescription;
+
+        newfamily.conservation_rules = pfamily->conservation_rules;
+        newfamily.numeric_rules      = pfamily->numeric_rules;
+        newfamily.sps_numeric_rules  = pfamily->sps_numeric_rules;
+
+        auto complete_info = newfamily.sps_in_complete_propagator();
+        newfamily.propagators  = complete_info.prop;
+        newfamily.cut          = complete_info.cut;
+
+        subfamilies.push_back(newfamily);
+    }
+
+    return subfamilies;
 }
 
 

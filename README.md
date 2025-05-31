@@ -4,8 +4,8 @@
 ## Fetch the code
 
 ```sh
-git clone https://github.com/zml72062/amflow-frontend
-cd amflow-frontend
+git clone https://github.com/zml72062/amflow-cpp
+cd amflow-cpp
 git submodule init
 git submodule update
 ```
